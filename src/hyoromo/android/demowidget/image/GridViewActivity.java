@@ -1,22 +1,33 @@
 package hyoromo.android.demowidget.image;
 
+import hyoromo.android.demowidget.Log;
 import hyoromo.android.demowidget.R;
 
 import java.io.File;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.Toast;
 
-public class GridViewActivity extends Activity {
+/**
+ * GridViewを使った簡単なデモ
+ * ・PATHに入っている画像を一覧で表示させます。
+ * 
+ * @author hyoromo
+ */
+public class GridViewActivity extends Activity implements AdapterView.OnItemClickListener {
+    static final int REQUEST_OK = 1;
     private static final String PATH = "/sdcard/DCIM/Camera/";
     private static Context mContext;
     private static String[] mData;
@@ -31,14 +42,14 @@ public class GridViewActivity extends Activity {
         imagePath();
 
         // GridViewに表示させるためのアダプターを作成
-        //ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, R.layout.image_grid_rowdata, mData);
-        IconicAdapter adapter = new IconicAdapter();
+        ImageAdapter adapter = new ImageAdapter();
         for (String path : mData) {
             adapter.add(listDatas(path));
         }
 
         // GridViewを作成してアダプターをセット
         GridView gv = (GridView) findViewById(R.id.image_grid);
+        gv.setOnItemClickListener(this);
         gv.setAdapter(adapter);
     }
 
@@ -64,23 +75,16 @@ public class GridViewActivity extends Activity {
      * 
      * @author hyoromo
      */
-    private class IconicAdapter extends ArrayAdapter<ListData> {
+    private class ImageAdapter extends ArrayAdapter<ListData> {
         private final LayoutInflater mInflater;
 
-        IconicAdapter() {
+        ImageAdapter() {
             super(mContext, 0);
             mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         }
 
         /**
          * 画面に表示される毎に呼び出される
-         * 
-         * @param position
-         *            : 表示する対象Listの一覧を上から数えたときの番号
-         * @param convertView
-         *            : 表示する対象ListのView
-         * @param parent
-         *            : 知らん
          */
         final public View getView(int position, View convertView, ViewGroup parent) {
             ListStorage listStorage;
@@ -91,6 +95,7 @@ public class GridViewActivity extends Activity {
                 row = mInflater.inflate(R.layout.image_grid_rowdata, parent, false);
                 listStorage = new ListStorage();
                 listStorage.img = (ImageView) row.findViewById(R.id.image_grid_img);
+                listStorage.img.setLayoutParams(new GridView.LayoutParams(85, 85));
                 row.setTag(listStorage);
             } else {
                 listStorage = (ListStorage) row.getTag();
@@ -98,15 +103,8 @@ public class GridViewActivity extends Activity {
 
             // Listに画像設定
             ListData listData = getItem(position);
-            if (listData != null) {
-                if (listData != null && listStorage.img != null) {
-                    listStorage.img.setImageBitmap(listData.bitmap);
-                    listStorage.url = listData.url;
-                } else {
-                    listStorage.img.setImageBitmap(null);
-                    listStorage.url = "";
-                }
-            }
+            listStorage.url = listData.url;
+            listStorage.img.setImageBitmap(listData.bitmap);
 
             return row;
         }
@@ -120,5 +118,37 @@ public class GridViewActivity extends Activity {
     private class ListStorage {
         ImageView img;
         String url;
+    }
+
+    /**
+     * 画像がクリックされたら呼ばれる
+     */
+    public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+        ImageView img = (ImageView) v.findViewById(R.id.image_grid_img);
+        ListStorage listStorage = (ListStorage) img.getTag();
+        Log.v(listStorage.url);
+
+        // コールバック付きで遷移
+        Intent intent = new Intent(mContext, ImageViewActivity.class);
+        intent.putExtra("PATH", listStorage.url);
+        startActivityForResult(intent, REQUEST_OK);
+    }
+
+    /**
+     * 遷移先から戻った時に呼び出される
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 1) {
+            if (resultCode == RESULT_OK) {
+                Toast.makeText(this, data.getStringExtra("TEXT"), Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mContext = null;
     }
 }

@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">DemoWidget</string>
     <string name="main_btn_image">Image Widget Demo</string>
+    <string name="image_image_ok">OK!</string>
 </resources>
